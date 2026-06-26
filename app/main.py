@@ -20,7 +20,7 @@ from .db import conexion, dict_cursor, esperar_bd
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await esperar_bd()
+    esperar_bd()
     yield
 
 
