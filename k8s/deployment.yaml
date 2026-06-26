@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: casino-estadisticas
+  namespace: vidalcasino
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: casino-estadisticas
+  template:
+    metadata:
+      labels:
+        app: casino-estadisticas
+    spec:
+      containers:
+        - name: casino-estadisticas
+          image: 147588477011.dkr.ecr.us-east-1.amazonaws.com/casino-estadisticas:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8006
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: casino-secrets
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: casino-secrets
+                  key: DB_PORT
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: casino-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: casino-secrets
+                  key: DB_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: casino-secrets
+                  key: DB_NAME
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8006
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 8006
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "400m"
+              memory: "256Mi"
