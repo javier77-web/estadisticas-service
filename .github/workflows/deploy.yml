@@ -1,4 +1,4 @@
-name: CI/CD EstadÃ­sticas - Build, Push ECR y Deploy EKS
+name: CI/CD Estadisticas - Build, Push ECR y Deploy EKS
 
 on:
   push:
@@ -20,19 +20,23 @@ jobs:
       image: ${{ steps.build-image.outputs.image }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: Configurar AWS
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - id: login-ecr
+      - name: Login Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - id: build-image
+      - name: Build y Push imagen
+        id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
@@ -53,23 +57,35 @@ jobs:
     needs: build-and-push
 
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar AWS
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - run: |
+      - name: Configurar kubectl para EKS
+        run: |
           aws eks update-kubeconfig \
             --region $AWS_REGION \
             --name $CLUSTER_NAME
 
-      - run: |
+      - name: Aplicar manifests de Kubernetes
+        run: |
+          kubectl apply -R -f k8s/
+
+      - name: Actualizar Deployment de estadísticas
+        run: |
           kubectl set image deployment/casino-estadisticas \
             casino-estadisticas=${{ needs.build-and-push.outputs.image }} \
             -n $NAMESPACE
 
-      - run: |
+      - name: Esperar rollout
+        run: |
           kubectl rollout status deployment/casino-estadisticas \
-            -n $NAMESPACE
+            -n $NAMESPACE \
+            --timeout=180s
