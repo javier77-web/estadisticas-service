@@ -20,7 +20,7 @@ from .db import conexion, dict_cursor, esperar_bd
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    esperar_bd()
+    await esperar_bd()
     yield
 
 
@@ -59,6 +59,7 @@ def readiness():
         with conexion() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT 1")
+                cur.fetchone()
         return {"status": "ready"}
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"database not ready: {str(e)}")
