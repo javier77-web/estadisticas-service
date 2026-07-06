@@ -47,6 +47,16 @@ spec:
                 secretKeyRef:
                   name: casino-secrets
                   key: DB_NAME
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: casino-secrets
+                  key: JWT_SECRET
+            - name: JWT_EXPIRES_IN
+              valueFrom:
+                secretKeyRef:
+                  name: casino-secrets
+                  key: JWT_EXPIRES_IN
           startupProbe:
             httpGet:
               path: /livez
